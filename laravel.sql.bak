@@ -1,0 +1,879 @@
+-- phpMyAdmin SQL Dump
+-- version 5.1.1
+-- https://www.phpmyadmin.net/
+--
+-- Servidor: 127.0.0.1
+-- Tiempo de generación: 05-02-2023 a las 23:53:27
+-- Versión del servidor: 10.4.22-MariaDB
+-- Versión de PHP: 8.1.2
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Base de datos: `mizu_83`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `administrador`
+--
+
+CREATE TABLE `administrador` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `nombre` varchar(100) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"pk":true,"n":"Nombre"}',
+  `user` varchar(24) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"se":true,"n":"Usuario"}',
+  `correo` varchar(250) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"ec":true,"n":"Correo"}',
+  `pass` varchar(255) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"n":"Clave","ps":true}',
+  `activo` bigint(20) UNSIGNED NOT NULL COMMENT '{"n":"Habilitado"}',
+  `rol` bigint(20) UNSIGNED NOT NULL COMMENT '{"n":"Rol del administrador"}',
+  `suscrito` bigint(20) UNSIGNED NOT NULL DEFAULT 1 COMMENT '{"n":"Permite correos"}',
+  `res` varchar(255) COLLATE utf8_spanish_ci DEFAULT '' COMMENT '{"n":"Notas","ig":true}',
+  `gda` varchar(255) COLLATE utf8_spanish_ci DEFAULT NULL COMMENT '{"n":"Google secret doble auth"}'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+
+--
+-- Volcado de datos para la tabla `administrador`
+--
+
+INSERT INTO `administrador` (`id`, `nombre`, `user`, `correo`, `pass`, `activo`, `rol`, `suscrito`, `res`, `gda`) VALUES
+(1, 'Admin', 'admin', 'admin@admin.co', '$2y$10$Q2T/7/LLAr2CQ.CRAWUdr.fsMt2KgpibJ45cc8hnYVzITtrwmi2nm', 1, 8, 1, '', '');
+
+--
+-- Disparadores `administrador`
+--
+DELIMITER $$
+CREATE TRIGGER `trd_administrador` BEFORE DELETE ON `administrador` FOR EACH ROW BEGIN
+	INSERT INTO `zaud_administrador`(`id`, `nombre`, `user`, `correo`, `pass`, `activo`, `rol`, `suscrito`, `res`, `gda`, `zaud_operacion`, `zaud_fecha`, `zaud_quien`) VALUES (old.`id`, old.`nombre`, old.`user`, old.`correo`, old.`pass`, old.`activo`, old.`rol`, old.`suscrito`, old.`res`, old.`gda`, 'DELETE', CURRENT_TIMESTAMP, @var);
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `tri_administrador` AFTER INSERT ON `administrador` FOR EACH ROW BEGIN
+	INSERT INTO `zaud_administrador`(`id`, `nombre`, `user`, `correo`, `pass`, `activo`, `rol`, `suscrito`, `res`, `gda`, `zaud_operacion`, `zaud_fecha`, `zaud_quien`) VALUES (new.`id`, new.`nombre`, new.`user`, new.`correo`, new.`pass`, new.`activo`, new.`rol`, new.`suscrito`, new.`res`, new.`gda`, 'INSERT', CURRENT_TIMESTAMP, @var);
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `tru_administrador` AFTER UPDATE ON `administrador` FOR EACH ROW BEGIN
+	INSERT INTO `zaud_administrador`(`id`, `nombre`, `user`, `correo`, `pass`, `activo`, `rol`, `suscrito`, `res`, `gda`, `zaud_operacion`, `zaud_fecha`, `zaud_quien`) VALUES (new.`id`, new.`nombre`, new.`user`, new.`correo`, new.`pass`, new.`activo`, new.`rol`, new.`suscrito`, new.`res`, new.`gda`, 'UPDATE', CURRENT_TIMESTAMP, @var);
+END
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `adminpermiso`
+--
+
+CREATE TABLE `adminpermiso` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `men` bigint(20) UNSIGNED NOT NULL COMMENT '{"n":"Menú"}',
+  `tip` bigint(20) UNSIGNED NOT NULL COMMENT '{"n":"Tipo de permiso"}',
+  `tia` bigint(20) UNSIGNED DEFAULT NULL COMMENT '{"n":"Tipo de Administrador"}',
+  `adm` bigint(20) UNSIGNED DEFAULT NULL COMMENT '{"n":"Administrador"}'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci COMMENT='{"n":"Permisos de Administrador","a":false}';
+
+--
+-- Volcado de datos para la tabla `adminpermiso`
+--
+
+INSERT INTO `adminpermiso` (`id`, `men`, `tip`, `tia`, `adm`) VALUES
+(1, 5, 1, 8, NULL),
+(2, 7, 1, 8, NULL),
+(3, 9, 1, 8, NULL),
+(4, 10, 1, 8, NULL),
+(5, 12, 1, 8, NULL);
+
+--
+-- Disparadores `adminpermiso`
+--
+DELIMITER $$
+CREATE TRIGGER `unoDeDos` BEFORE INSERT ON `adminpermiso` FOR EACH ROW BEGIN IF new.`tia` is null AND new.`adm` is null THEN signal sqlstate '45000' set message_text = 'Debe seleccionar un administrador o un tipo de administrador'; END IF; IF new.`tia` is NOT null AND new.`adm` is NOT null THEN signal sqlstate '45000' set message_text = 'No puede seleccionar administrador y tipo de administrador al mismo tiempo'; END IF; END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `updUnoDeDos` BEFORE UPDATE ON `adminpermiso` FOR EACH ROW BEGIN IF new.`tia` is null AND new.`adm` is null THEN signal sqlstate '45000' set message_text = 'Debe seleccionar un administrador o un tipo de administrador'; END IF; IF new.`tia` is NOT null AND new.`adm` is NOT null THEN signal sqlstate '45000' set message_text = 'No puede seleccionar administrador y tipo de administrador al mismo tiempo'; END IF; END
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `admintipo`
+--
+
+CREATE TABLE `admintipo` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `tipo` varchar(100) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"pk":true,"n":"Tipo de administrador"}',
+  `vis` bigint(20) UNSIGNED NOT NULL DEFAULT 0 COMMENT '{"n":"Visible"}'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+
+--
+-- Volcado de datos para la tabla `admintipo`
+--
+
+INSERT INTO `admintipo` (`id`, `tipo`, `vis`) VALUES
+(1, 'Admin', 1);
+
+--
+-- Disparadores `admintipo`
+--
+DELIMITER $$
+CREATE TRIGGER `trd_admintipo` BEFORE DELETE ON `admintipo` FOR EACH ROW BEGIN
+	INSERT INTO `zaud_admintipo`(`id`, `tipo`, `vis`, `zaud_operacion`, `zaud_fecha`, `zaud_quien`) VALUES (old.`id`, old.`tipo`, old.`vis`, 'DELETE', CURRENT_TIMESTAMP, @var);
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `tri_admintipo` AFTER INSERT ON `admintipo` FOR EACH ROW BEGIN
+	INSERT INTO `zaud_admintipo`(`id`, `tipo`, `vis`, `zaud_operacion`, `zaud_fecha`, `zaud_quien`) VALUES (new.`id`, new.`tipo`, new.`vis`, 'INSERT', CURRENT_TIMESTAMP, @var);
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `tru_admintipo` AFTER UPDATE ON `admintipo` FOR EACH ROW BEGIN
+	INSERT INTO `zaud_admintipo`(`id`, `tipo`, `vis`, `zaud_operacion`, `zaud_fecha`, `zaud_quien`) VALUES (new.`id`, new.`tipo`, new.`vis`, 'UPDATE', CURRENT_TIMESTAMP, @var);
+END
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `citas`
+--
+
+CREATE TABLE `citas` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `fecha` timestamp NOT NULL DEFAULT current_timestamp() COMMENT '{"g":12,"pk":true,"n":"Fecha y Hora"}',
+  `mascota` bigint(20) UNSIGNED NOT NULL COMMENT '{"g":12,"n":"Mascota","eh":true}',
+  `atendida` bigint(20) UNSIGNED NOT NULL COMMENT '{"g":12,"n":"Ya atendida","eh":true,"sn":true}'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci COMMENT='{"n":"Citas","a":false}';
+
+--
+-- Volcado de datos para la tabla `citas`
+--
+
+--
+-- Disparadores `citas`
+--
+DELIMITER $$
+CREATE TRIGGER `uno10` BEFORE INSERT ON `citas` FOR EACH ROW BEGIN
+  DECLARE fecha_existente INT;
+  SELECT COUNT(*) INTO fecha_existente
+  FROM `citas`
+  WHERE `fecha` BETWEEN NEW.fecha - INTERVAL 10 MINUTE AND NEW.fecha + INTERVAL 10 MINUTE;
+  IF fecha_existente > 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La fecha se superpone con otras fechas dentro de 10 minutos';
+  END IF;
+END
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `clientes`
+--
+
+CREATE TABLE `clientes` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `tipo_documento` bigint(20) UNSIGNED NOT NULL COMMENT '{"g":"6","n":"Tipo de documento","eh":true}',
+  `num_documento` bigint(20) UNSIGNED NOT NULL COMMENT '{"g":"6","n":"Número de Documento"}',
+  `nombre` varchar(255) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"g":"12","pk":true,"n":"Nombres y Apellidos"}',
+  `celular` bigint(20) UNSIGNED NOT NULL COMMENT '{"g":"6","et":true,"n":"Número de Celular"}',
+  `email` varchar(255) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"g":"6","ec":true,"n":"E-mail"}'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci COMMENT='{"n":"Clientes","a":false}';
+
+--
+-- Volcado de datos para la tabla `clientes`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `contactanos`
+--
+
+CREATE TABLE `contactanos` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `nom` varchar(100) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"pk":true,"n":"Nombre"}',
+  `celular` bigint(20) UNSIGNED NOT NULL COMMENT '{"g":12,"et":true,"n":"Número de celular"}',
+  `hel` bigint(20) UNSIGNED NOT NULL COMMENT '{"g":12,"ck":true,"n":"He leído y acepto la política de privacidad de protección de datos"}'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci COMMENT='{"n":"Contáctanos","a":false}';
+
+--
+-- Volcado de datos para la tabla `contactanos`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `global`
+--
+
+CREATE TABLE `global` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `cam` varchar(100) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"pk":true,"n":"Campo"}',
+  `lla` varchar(100) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"n":"Llave"}',
+  `val` varbinary(500) DEFAULT NULL COMMENT '{"do":true,"n":"Valor"}'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci COMMENT='{"n":"Configuración","a":false}';
+
+--
+-- Volcado de datos para la tabla `global`
+--
+
+INSERT INTO `global` (`id`, `cam`, `lla`, `val`) VALUES
+(1, 'Sistema', 'Bloqueado', 0x6f76e0065caef99034c1b27c3a7de548);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `ingresos`
+--
+
+CREATE TABLE `ingresos` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `intento` int(2) NOT NULL COMMENT '{"n":"Intento"}',
+  `tipo` varchar(50) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"n":"Tipo"}',
+  `ip` varchar(50) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"n":"IP"}',
+  `fecha` date NOT NULL COMMENT '{"n":"Fecha Ingreso"}'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+
+--
+-- Volcado de datos para la tabla `ingresos`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `mascota`
+--
+
+CREATE TABLE `mascota` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `tip` bigint(20) UNSIGNED NOT NULL COMMENT '{"g":"6","n":"Tipo de Mascota","eh":true}',
+  `ide_mascota` varchar(100) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"g":"6","pk":true,"n":"Identificador de la Mascota"}',
+  `nom_mascota` varchar(100) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"g":12,"n":"Nombre mascota"}',
+  `responsable` bigint(20) UNSIGNED NOT NULL COMMENT '{"g":"12","n":"Responsable","eh":true}'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci COMMENT='{"n":"Mascota","a":false}';
+
+--
+-- Volcado de datos para la tabla `mascota`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `menu`
+--
+
+CREATE TABLE `menu` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `tab` varchar(100) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"n":"Tabla"}',
+  `men` bigint(20) UNSIGNED NOT NULL COMMENT '{"n":"Menu grupo"}',
+  `nom` varchar(100) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"pk":true,"n":"Nombre"}',
+  `ima` varchar(2500) COLLATE utf8_spanish_ci DEFAULT '[]' COMMENT '{"a":"publico","ca":"1","pa":"6","ta":"0","wi":"500","he":"500","ap":"0","cw":"0","gc":"png","n":"Imagen"}',
+  `lin` varchar(255) COLLATE utf8_spanish_ci DEFAULT NULL COMMENT '{"n":"Link (Ruta completa /veterinaria/forms)","l":"/veterinaria/forms/"}',
+  `ord` decimal(6,2) UNSIGNED DEFAULT NULL COMMENT '{"n":"Orden","o":"orn"}',
+  `aud` bigint(20) UNSIGNED NOT NULL DEFAULT 2 COMMENT '{"n":"Auditada"}'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci COMMENT='{"n":"Menú","a":false}';
+
+--
+-- Volcado de datos para la tabla `menu`
+--
+
+INSERT INTO `menu` (`id`, `tab`, `men`, `nom`, `ima`, `lin`, `ord`, `aud`) VALUES
+(1, 'admintipo', 1, 'Tipo de Usuario', '[]', NULL, '1.00', 1),
+(2, 'administrador', 1, 'Usuarios', '[]', NULL, '2.00', 1),
+(3, 'global', 2, 'Configuración', '[]', NULL, '50.00', 2),
+(4, 'unidis', 1, 'Único dispositivo', '[]', NULL, NULL, 2),
+(5, 'clientes', 3, 'Clientes', '[{\"t\":0,\"w\":\"\",\"n\":\"cliente.png\",\"s\":277028}]', '', '49.00', 2),
+(6, 'tipodoc', 1, 'Tipo de documento', '[]', NULL, NULL, 2),
+(7, 'mascota', 3, 'Mascota', '[{\"t\":0,\"w\":\"\",\"n\":\"pets.png\",\"s\":331153}]', '', '48.00', 2),
+(8, 'tip_mascota', 1, 'Tipo de Mascota', '[]', NULL, NULL, 2),
+(9, 'citas', 3, 'Citas', '[{\"t\":0,\"w\":\"\",\"n\":\"cita.png\",\"s\":295084}]', '', NULL, 2),
+(10, 'contactanos', 1, 'Contáctanos', '[]', NULL, NULL, 2),
+(12, 'citas_calendario', 3, 'Ver Calendario', '[]', '/veterinaria/forms/citas/calendario.php', NULL, 2);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `menugrupo`
+--
+
+CREATE TABLE `menugrupo` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `nom` varchar(100) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"pk":true,"n":"Nombre"}',
+  `ord` decimal(6,2) UNSIGNED DEFAULT NULL COMMENT '{"n":"Orden","o":"orn"}'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci COMMENT='{"n":"Menú Grupo","a":false}';
+
+--
+-- Volcado de datos para la tabla `menugrupo`
+--
+
+INSERT INTO `menugrupo` (`id`, `nom`, `ord`) VALUES
+(1, 'Operativo', '1.00'),
+(2, 'Sistema', '50.00'),
+(3, 'Clientes', '49.00'),
+(4, 'Estadísticas', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `registro`
+--
+
+CREATE TABLE `registro` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `usuario` bigint(20) UNSIGNED NOT NULL,
+  `navegador` varchar(100) COLLATE utf8_spanish_ci NOT NULL,
+  `os` varchar(100) COLLATE utf8_spanish_ci NOT NULL,
+  `ip` varchar(100) COLLATE utf8_spanish_ci NOT NULL,
+  `pais` varchar(200) COLLATE utf8_spanish_ci NOT NULL,
+  `fecha` timestamp NOT NULL DEFAULT current_timestamp(),
+  `acepta` bigint(20) UNSIGNED NOT NULL DEFAULT 1 COMMENT '{"pk":true,"n":"Acepta"}',
+  `detalle` varchar(200) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"n":"Detalle: tabla, campo y id"}'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci COMMENT='{"n":"Registros","a":false}';
+
+--
+-- Volcado de datos para la tabla `registro`
+--
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `resetpass`
+--
+
+CREATE TABLE `resetpass` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `usuario_id` bigint(20) UNSIGNED NOT NULL,
+  `username` varchar(24) COLLATE utf8_spanish_ci NOT NULL,
+  `token` varchar(64) COLLATE utf8_spanish_ci NOT NULL,
+  `creada` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `sino`
+--
+
+CREATE TABLE `sino` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `nom` varchar(10) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"pk":true,"n":"Nombre"}'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci COMMENT='{"n":"siNo","a":false}';
+
+--
+-- Volcado de datos para la tabla `sino`
+--
+
+INSERT INTO `sino` (`id`, `nom`) VALUES
+(2, 'No'),
+(1, 'Si');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `tipermiso`
+--
+
+CREATE TABLE `tipermiso` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `nom` varchar(100) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"se":true,"pk":true,"n":"Nombre"}',
+  `des` varchar(500) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"n":"Descripción"}'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci COMMENT='{"n":"Tipo de permiso"}';
+
+--
+-- Volcado de datos para la tabla `tipermiso`
+--
+
+INSERT INTO `tipermiso` (`id`, `nom`, `des`) VALUES
+(1, 'total', 'Permite ver, crear, editar y eliminar la información'),
+(2, 'lectura', 'Permite ver la información y exportarla, más no manipularla'),
+(3, 'leerModificar', 'Permite ver la información y modificarla, más no crearla o eliminarla'),
+(4, 'dummy', 'Permiso por defecto para cosas personalizadas'),
+(5, 'estadistica', 'Permiso para ver estadísticos'),
+(6, 'auditar', 'Permiso para ver los datos auditados de la tabla');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `tipodoc`
+--
+
+CREATE TABLE `tipodoc` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `nom` varchar(100) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"pk":true,"n":"Nombre"}'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci COMMENT='{"n":"Tipo de documento","a":false}';
+
+--
+-- Volcado de datos para la tabla `tipodoc`
+--
+
+INSERT INTO `tipodoc` (`id`, `nom`) VALUES
+(1, 'Cédula de Ciudadanía'),
+(2, 'Cédula de Extranjería'),
+(8, 'Documento Nacional de Identificación'),
+(5, 'Licencia de Conducción'),
+(6, 'Número de Identificación Tributaria'),
+(4, 'Número de Seguridad Social'),
+(3, 'Pasaporte'),
+(9, 'Permiso Especial de Permanencia'),
+(7, 'Tarjeta de Identidad');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `tip_mascota`
+--
+
+CREATE TABLE `tip_mascota` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `nom` varchar(100) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"g":12,"pk":true,"n":"Nombre"}'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci COMMENT='{"n":"Tipo de Mascota","a":false}';
+
+--
+-- Volcado de datos para la tabla `tip_mascota`
+--
+
+INSERT INTO `tip_mascota` (`id`, `nom`) VALUES
+(4, 'Caballo'),
+(3, 'Conejo'),
+(2, 'Gato'),
+(1, 'Perro');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `unidis`
+--
+
+CREATE TABLE `unidis` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `adm` bigint(20) UNSIGNED NOT NULL COMMENT '{"pk":true,"n":"Administrador"}',
+  `dat` bigint(20) UNSIGNED NOT NULL COMMENT '{"ck":true,"n":"Datos Usuario"}',
+  `ing` timestamp NOT NULL DEFAULT current_timestamp() COMMENT '{"n":"Ingreso"}',
+  `ult` timestamp NOT NULL DEFAULT current_timestamp() COMMENT '{"n":"Último movimiento"}',
+  `abi` bigint(20) UNSIGNED NOT NULL COMMENT '{"n":"Abierta"}',
+  `ses` varchar(100) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"n":"Sesión id"}'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci COMMENT='{"p":"tl","n":"Único dispositivo","a":false}';
+
+--
+-- Volcado de datos para la tabla `unidis`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `zaud_administrador`
+--
+
+CREATE TABLE `zaud_administrador` (
+  `id` bigint(20) UNSIGNED NOT NULL DEFAULT 0,
+  `nombre` varchar(100) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"pk":true,"n":"Nombre"}',
+  `user` varchar(24) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"se":true,"n":"Usuario"}',
+  `correo` varchar(250) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"ec":true,"n":"Correo"}',
+  `pass` varchar(255) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"n":"Clave","ps":true}',
+  `activo` bigint(20) UNSIGNED NOT NULL COMMENT '{"n":"Habilitado"}',
+  `rol` bigint(20) UNSIGNED NOT NULL COMMENT '{"n":"Rol del administrador"}',
+  `suscrito` bigint(20) UNSIGNED NOT NULL DEFAULT 1 COMMENT '{"n":"Permite correos"}',
+  `res` varchar(255) COLLATE utf8_spanish_ci DEFAULT '' COMMENT '{"n":"Notas","ig":true}',
+  `gda` varchar(255) COLLATE utf8_spanish_ci DEFAULT NULL COMMENT '{"n":"Google secret doble auth"}',
+  `zaud_operacion` varchar(16) COLLATE utf8_spanish_ci NOT NULL,
+  `zaud_quien` bigint(20) UNSIGNED DEFAULT NULL,
+  `zaud_fecha` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+
+--
+-- Volcado de datos para la tabla `zaud_administrador`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `zaud_admintipo`
+--
+
+CREATE TABLE `zaud_admintipo` (
+  `id` bigint(20) UNSIGNED NOT NULL DEFAULT 0,
+  `tipo` varchar(100) COLLATE utf8_spanish_ci NOT NULL COMMENT '{"pk":true,"n":"Tipo de administrador"}',
+  `vis` bigint(20) UNSIGNED NOT NULL DEFAULT 0 COMMENT '{"n":"Visible"}',
+  `zaud_operacion` varchar(16) COLLATE utf8_spanish_ci NOT NULL,
+  `zaud_quien` bigint(20) UNSIGNED DEFAULT NULL,
+  `zaud_fecha` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_spanish_ci;
+
+--
+-- Volcado de datos para la tabla `zaud_admintipo`
+--
+
+--
+-- Índices para tablas volcadas
+--
+
+--
+-- Indices de la tabla `administrador`
+--
+ALTER TABLE `administrador`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `user` (`user`),
+  ADD UNIQUE KEY `correo` (`correo`),
+  ADD KEY `administrador_rol` (`rol`),
+  ADD KEY `activo` (`activo`),
+  ADD KEY `suscrito` (`suscrito`);
+
+--
+-- Indices de la tabla `adminpermiso`
+--
+ALTER TABLE `adminpermiso`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `mix` (`men`,`tip`,`tia`),
+  ADD UNIQUE KEY `mixa` (`men`,`tip`,`adm`) USING BTREE,
+  ADD KEY `adminpermiso_tipermiso_tip` (`tip`),
+  ADD KEY `adminpermiso_admintipo_tia` (`tia`),
+  ADD KEY `adminpermiso_administrador_adm` (`adm`);
+
+--
+-- Indices de la tabla `admintipo`
+--
+ALTER TABLE `admintipo`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `tipo` (`tipo`),
+  ADD KEY `admintipo_sino` (`vis`);
+
+--
+-- Indices de la tabla `citas`
+--
+ALTER TABLE `citas`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `citas_mascota_mas` (`mascota`),
+  ADD KEY `citas_sino_atendida` (`atendida`);
+
+--
+-- Indices de la tabla `clientes`
+--
+ALTER TABLE `clientes`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `cli_tipodoc_tip` (`tipo_documento`);
+
+--
+-- Indices de la tabla `contactanos`
+--
+ALTER TABLE `contactanos`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `contactanos_registro_hel` (`hel`);
+
+--
+-- Indices de la tabla `global`
+--
+ALTER TABLE `global`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `global_mix` (`cam`,`lla`);
+
+--
+-- Indices de la tabla `ingresos`
+--
+ALTER TABLE `ingresos`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indices de la tabla `mascota`
+--
+ALTER TABLE `mascota`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `ide_mascota` (`ide_mascota`),
+  ADD UNIQUE KEY `ide_mascota_2` (`ide_mascota`),
+  ADD KEY `mascota_tip_mascota_tip` (`tip`),
+  ADD KEY `mascota_clientes_cli` (`responsable`);
+
+--
+-- Indices de la tabla `menu`
+--
+ALTER TABLE `menu`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `tab` (`tab`),
+  ADD KEY `menu_menugrupo` (`men`),
+  ADD KEY `menu_sino` (`aud`);
+
+--
+-- Indices de la tabla `menugrupo`
+--
+ALTER TABLE `menugrupo`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indices de la tabla `registro`
+--
+ALTER TABLE `registro`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `acepta_sino` (`acepta`);
+
+--
+-- Indices de la tabla `resetpass`
+--
+ALTER TABLE `resetpass`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `usuario_id` (`usuario_id`),
+  ADD KEY `username` (`username`);
+
+--
+-- Indices de la tabla `sino`
+--
+ALTER TABLE `sino`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `nom` (`nom`);
+
+--
+-- Indices de la tabla `tipermiso`
+--
+ALTER TABLE `tipermiso`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `nom` (`nom`);
+
+--
+-- Indices de la tabla `tipodoc`
+--
+ALTER TABLE `tipodoc`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `nom` (`nom`);
+
+--
+-- Indices de la tabla `tip_mascota`
+--
+ALTER TABLE `tip_mascota`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `nom` (`nom`);
+
+--
+-- Indices de la tabla `unidis`
+--
+ALTER TABLE `unidis`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `unidis_registro` (`dat`),
+  ADD KEY `abi_sino` (`abi`);
+
+--
+-- Indices de la tabla `zaud_administrador`
+--
+ALTER TABLE `zaud_administrador`
+  ADD KEY `quien_administrador` (`zaud_quien`);
+
+--
+-- Indices de la tabla `zaud_admintipo`
+--
+ALTER TABLE `zaud_admintipo`
+  ADD KEY `quien_admintipo` (`zaud_quien`);
+
+--
+-- AUTO_INCREMENT de las tablas volcadas
+--
+
+--
+-- AUTO_INCREMENT de la tabla `administrador`
+--
+ALTER TABLE `administrador`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT de la tabla `adminpermiso`
+--
+ALTER TABLE `adminpermiso`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT de la tabla `admintipo`
+--
+ALTER TABLE `admintipo`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT de la tabla `citas`
+--
+ALTER TABLE `citas`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT de la tabla `clientes`
+--
+ALTER TABLE `clientes`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT de la tabla `contactanos`
+--
+ALTER TABLE `contactanos`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT de la tabla `global`
+--
+ALTER TABLE `global`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+
+--
+-- AUTO_INCREMENT de la tabla `ingresos`
+--
+ALTER TABLE `ingresos`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT de la tabla `mascota`
+--
+ALTER TABLE `mascota`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT de la tabla `menu`
+--
+ALTER TABLE `menu`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+
+--
+-- AUTO_INCREMENT de la tabla `menugrupo`
+--
+ALTER TABLE `menugrupo`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT de la tabla `registro`
+--
+ALTER TABLE `registro`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+
+--
+-- AUTO_INCREMENT de la tabla `resetpass`
+--
+ALTER TABLE `resetpass`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `tipermiso`
+--
+ALTER TABLE `tipermiso`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT de la tabla `tipodoc`
+--
+ALTER TABLE `tipodoc`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+--
+-- AUTO_INCREMENT de la tabla `tip_mascota`
+--
+ALTER TABLE `tip_mascota`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT de la tabla `unidis`
+--
+ALTER TABLE `unidis`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- Restricciones para tablas volcadas
+--
+
+--
+-- Filtros para la tabla `administrador`
+--
+ALTER TABLE `administrador`
+  ADD CONSTRAINT `admin_sinoa` FOREIGN KEY (`activo`) REFERENCES `sino` (`id`),
+  ADD CONSTRAINT `admin_sinos` FOREIGN KEY (`suscrito`) REFERENCES `sino` (`id`),
+  ADD CONSTRAINT `administrador_rol` FOREIGN KEY (`rol`) REFERENCES `admintipo` (`id`) ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `adminpermiso`
+--
+ALTER TABLE `adminpermiso`
+  ADD CONSTRAINT `adminpermiso_administrador_adm` FOREIGN KEY (`adm`) REFERENCES `administrador` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `adminpermiso_admintipo_tia` FOREIGN KEY (`tia`) REFERENCES `admintipo` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `adminpermiso_menu_men` FOREIGN KEY (`men`) REFERENCES `menu` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `adminpermiso_tipermiso_tip` FOREIGN KEY (`tip`) REFERENCES `tipermiso` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `admintipo`
+--
+ALTER TABLE `admintipo`
+  ADD CONSTRAINT `admintipo_sino` FOREIGN KEY (`vis`) REFERENCES `sino` (`id`);
+
+--
+-- Filtros para la tabla `citas`
+--
+ALTER TABLE `citas`
+  ADD CONSTRAINT `citas_mascota_mas` FOREIGN KEY (`mascota`) REFERENCES `mascota` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `citas_sino_atendida` FOREIGN KEY (`atendida`) REFERENCES `sino` (`id`) ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `clientes`
+--
+ALTER TABLE `clientes`
+  ADD CONSTRAINT `cli_tipodoc_tip` FOREIGN KEY (`tipo_documento`) REFERENCES `tipodoc` (`id`) ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `contactanos`
+--
+ALTER TABLE `contactanos`
+  ADD CONSTRAINT `contactanos_registro_hel` FOREIGN KEY (`hel`) REFERENCES `registro` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `mascota`
+--
+ALTER TABLE `mascota`
+  ADD CONSTRAINT `mascota_clientes_cli` FOREIGN KEY (`responsable`) REFERENCES `clientes` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `mascota_tip_mascota_tip` FOREIGN KEY (`tip`) REFERENCES `tip_mascota` (`id`) ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `menu`
+--
+ALTER TABLE `menu`
+  ADD CONSTRAINT `menu_menugrupo` FOREIGN KEY (`men`) REFERENCES `menugrupo` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `menu_sino` FOREIGN KEY (`aud`) REFERENCES `sino` (`id`) ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `registro`
+--
+ALTER TABLE `registro`
+  ADD CONSTRAINT `acepta_sino` FOREIGN KEY (`acepta`) REFERENCES `sino` (`id`);
+
+--
+-- Filtros para la tabla `resetpass`
+--
+ALTER TABLE `resetpass`
+  ADD CONSTRAINT `resetpass_username` FOREIGN KEY (`username`) REFERENCES `administrador` (`user`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `resetpass_usuario_id` FOREIGN KEY (`usuario_id`) REFERENCES `administrador` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `unidis`
+--
+ALTER TABLE `unidis`
+  ADD CONSTRAINT `abi_sino` FOREIGN KEY (`abi`) REFERENCES `sino` (`id`),
+  ADD CONSTRAINT `unidis_registro` FOREIGN KEY (`dat`) REFERENCES `registro` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `zaud_administrador`
+--
+ALTER TABLE `zaud_administrador`
+  ADD CONSTRAINT `quien_administrador` FOREIGN KEY (`zaud_quien`) REFERENCES `unidis` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `zaud_admintipo`
+--
+ALTER TABLE `zaud_admintipo`
+  ADD CONSTRAINT `quien_admintipo` FOREIGN KEY (`zaud_quien`) REFERENCES `unidis` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
